@@ -1,0 +1,76 @@
+### Task 3 demo requests (VS Code REST Client / IntelliJ HTTP client)
+@base = http://localhost:4000/api/v1
+
+### Health + database connectivity
+GET {{base}}/health
+
+### --- CREATE -------------------------------------------------------------
+### Create a user
+# @name createUser
+POST {{base}}/users
+Content-Type: application/json
+
+{ "email": "demo@example.com", "fullName": "Demo User", "role": "MANAGER" }
+
+### Create a project owned by that user
+# @name createProject
+POST {{base}}/projects
+Content-Type: application/json
+
+{ "name": "Apollo Rewrite", "description": "Demo project for Task 3", "status": "ACTIVE", "ownerId": "{{createUser.response.body.data.id}}" }
+
+### Create a task in that project
+# @name createTask
+POST {{base}}/tasks
+Content-Type: application/json
+
+{ "title": "Model the schema", "priority": "HIGH", "projectId": "{{createProject.response.body.data.id}}", "assigneeId": "{{createUser.response.body.data.id}}" }
+
+### --- READ ---------------------------------------------------------------
+GET {{base}}/users?page=1&limit=10&sort=createdAt&order=desc
+
+###
+GET {{base}}/projects/{{createProject.response.body.data.id}}
+
+###
+GET {{base}}/tasks?status=TODO&priority=HIGH
+
+###
+GET {{base}}/tasks/stats
+
+### --- UPDATE -------------------------------------------------------------
+PATCH {{base}}/tasks/{{createTask.response.body.data.id}}/status
+Content-Type: application/json
+
+{ "status": "DONE" }
+
+### --- VALIDATION FAILURES (the interesting part on camera) ---------------
+### Duplicate email -> 409 from the UNIQUE index
+POST {{base}}/users
+Content-Type: application/json
+
+{ "email": "demo@example.com", "fullName": "Copy Cat" }
+
+### Invalid enum value -> 422 from Zod
+POST {{base}}/users
+Content-Type: application/json
+
+{ "email": "bad@example.com", "fullName": "Bad Role", "role": "SUPERUSER" }
+
+### Non-existent project -> 400, foreign key has no target
+POST {{base}}/tasks
+Content-Type: application/json
+
+{ "title": "Orphan task", "projectId": "00000000-0000-0000-0000-000000000000" }
+
+### Blank title -> 422
+POST {{base}}/tasks
+Content-Type: application/json
+
+{ "title": "   ", "projectId": "{{createProject.response.body.data.id}}" }
+
+### --- DELETE -------------------------------------------------------------
+DELETE {{base}}/tasks/{{createTask.response.body.data.id}}
+
+###
+DELETE {{base}}/projects/{{createProject.response.body.data.id}}
