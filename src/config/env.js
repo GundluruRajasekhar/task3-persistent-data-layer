@@ -27,9 +27,7 @@ if (!parsed.success) {
   const details = parsed.error.issues
     .map((i) => `  - ${i.path.join('.')}: ${i.message}`)
     .join('\n');
-  // Note: we print which variable is wrong, never its value.
-  console.error('Invalid environment configuration:\n' + details);
-  process.exit(1);
+  throw new Error('Invalid environment configuration:\n' + details);
 }
 
 const env = parsed.data;
